@@ -22,6 +22,7 @@ import com.tencent.imsdk.TIMTextElem;
 import com.tencent.imsdk.TIMValueCallBack;
 
 import org.apache.cordova.CordovaWebView;
+import org.apache.cordova.PluginResult;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -99,6 +100,7 @@ public class Tim extends CordovaPlugin {
 
             // 初始化 SDK
             TIMManager.getInstance().init(cordovaActivity.getApplicationContext(), config);
+            sendNoResultPluginResult(callbackContext);
         } catch (JSONException e) {
             callbackContext.error(ERROR_INVALID_PARAMETERS);
             return;
@@ -118,11 +120,20 @@ public class Tim extends CordovaPlugin {
                     //错误码 code 和错误描述 desc，可用于定位请求失败原因
                     //错误码 code 列表请参见错误码表
                     Log.d(TAG, "login failed. code: " + code + " errmsg: " + desc);
+                    JSONObject json = new JSONObject();
+                    try {
+                        json.put("code", code);
+                        json.put("desc", desc);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                    callbackContext.error(json);
                 }
 
                 @Override
                 public void onSuccess() {
                     Log.d(TAG, "login succ");
+                    sendNoResultPluginResult(callbackContext);
                 }
             });
         } catch (JSONException e) {
@@ -142,11 +153,20 @@ public class Tim extends CordovaPlugin {
                 @Override
                 public void onError(int code, String desc) {
                     Log.d(TAG, "login failed. code: " + code + " errmsg: " + desc);
+                    JSONObject json = new JSONObject();
+                    try {
+                        json.put("code", code);
+                        json.put("desc", desc);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                    callbackContext.error(json);
                 }
 
                 @Override
                 public void onSuccess() {
                     Log.d(TAG, "login succ");
+                    sendNoResultPluginResult(callbackContext);
                 }
             });
         } catch (JSONException e) {
@@ -173,11 +193,26 @@ public class Tim extends CordovaPlugin {
                 public void onError(int code, String desc) {//发送消息失败
                     //错误码 code 和错误描述 desc，可用于定位请求失败原因
                     Log.d(TAG, "send message failed. code: " + code + " errmsg: " + desc);
+                    JSONObject json = new JSONObject();
+                    try {
+                        json.put("code", code);
+                        json.put("desc", desc);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                    callbackContext.error(json);
                 }
 
                 @Override
                 public void onSuccess(TIMMessage msg) {//发送消息成功
                     Log.e(TAG, "SendMsg ok");
+                    JSONObject json = new JSONObject();
+                    try {
+                        json.put("msg", msg);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                    callbackContext.error(json);
                 }
             });
         } catch (JSONException e) {
@@ -236,5 +271,12 @@ public class Tim extends CordovaPlugin {
                 return true; //返回true将终止回调链，不再调用下一个新消息监听器
             }
         });
+    }
+
+    private void sendNoResultPluginResult(CallbackContext callbackContext) {
+        // send no result and keep callback
+        PluginResult result = new PluginResult(PluginResult.Status.NO_RESULT);
+        result.setKeepCallback(true);
+        callbackContext.sendPluginResult(result);
     }
 }
