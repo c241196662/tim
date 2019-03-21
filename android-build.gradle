@@ -1,0 +1,10 @@
+dependencies {
+	api 'com.tencent.imsdk:imsdk:+'
+}
+android {
+    defaultConfig {
+        ndk {
+            abiFilters "armeabi-v7a"
+        }
+    }
+}
