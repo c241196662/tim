@@ -107,7 +107,7 @@ public class Tim extends CordovaPlugin {
         }
     }
 
-    private void login(CordovaArgs args, CallbackContext callbackContext) {
+    private void login(CordovaArgs args, final CallbackContext callbackContext) {
         final JSONObject params;
         try {
             params = args.getJSONObject(0);
@@ -142,7 +142,7 @@ public class Tim extends CordovaPlugin {
         }
     }
 
-    private void logout(CordovaArgs args, CallbackContext callbackContext) {
+    private void logout(CordovaArgs args, final CallbackContext callbackContext) {
         final JSONObject params;
         try {
             params = args.getJSONObject(0);
@@ -175,7 +175,7 @@ public class Tim extends CordovaPlugin {
         }
     }
 
-    private void send(CordovaArgs args, CallbackContext callbackContext) {
+    private void send(CordovaArgs args, final CallbackContext callbackContext) {
         final JSONObject params;
         try {
             params = args.getJSONObject(0);
@@ -254,7 +254,7 @@ public class Tim extends CordovaPlugin {
         }
     }
 
-    private void addMessageListener(CallbackContext callbackContext) {
+    private void addMessageListener(final CallbackContext callbackContext) {
         //设置消息监听器，收到新消息时，通过此监听器回调
         TIMManager.getInstance().addMessageListener(new TIMMessageListener() {//消息监听器
             @Override
