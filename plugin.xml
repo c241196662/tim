@@ -9,7 +9,7 @@
     <platform name="android">
         <config-file parent="/*" target="res/xml/config.xml">
             <feature name="Tim">
-                <param name="android-package" value="cordova-plugin-bakaan-tim.Tim" />
+                <param name="android-package" value="cordova.plugin.bakaan.tim.Tim" />
             </feature>
         </config-file>
         <config-file target="AndroidManifest.xml" parent="/*">
