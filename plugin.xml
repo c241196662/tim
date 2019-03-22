@@ -4,7 +4,7 @@
     xmlns:android="http://schemas.android.com/apk/res/android">
     <name>Tim</name>
     <js-module name="Tim" src="www/Tim.js">
-        <clobbers target="cordova.plugins.Tim" />
+        <clobbers target="Tim" />
     </js-module>
     <platform name="android">
         <config-file parent="/*" target="res/xml/config.xml">
