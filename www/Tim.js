@@ -87,5 +87,20 @@ module.exports = {
      */
     addmessagelistener: function (message, onSuccess, onError) {
         exec(onSuccess, onError, "Tim", "addmessagelistener", [message]);
-    }
+    },
+    /**
+    * 接收消息
+    *
+    * @example
+    * <code>
+    * Tim.loadsession({}, function (conversationlist) {
+    *     alert("conversationlist: " + conversationlist);
+    * }, function (reason) {
+    *     alert("Failed: " + reason);
+    * });
+    * </code>
+    */
+   loadsession: function (message, onSuccess, onError) {
+       exec(onSuccess, onError, "Tim", "loadsession", [message]);
+   }
 };
