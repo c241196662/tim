@@ -60,6 +60,8 @@ module.exports = {
      * @example
      * <code>
      * Tim.send({
+		   selto: 0, // 接受者ID
+		   conversationType: 1, // 消息类型, 1为个人, 2为群组, 可不填,默认为1
      *     msg: 'a bew test msg' // 文本内容
      * }, function (msg) {
      *     alert("msg: " + msg);

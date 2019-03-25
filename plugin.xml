@@ -24,6 +24,13 @@
             <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
         </config-file>
         <source-file src="src/android/Tim.java" target-dir="src/cordova/plugin/bakaan/tim" />
+        <source-file src="src/android/MessageInfo.java" target-dir="src/cordova/plugin/bakaan/tim" />
+        <source-file src="src/android/MessageInfoUtil.java" target-dir="src/cordova/plugin/bakaan/tim" />
+        <source-file src="src/android/SessionInfo.java" target-dir="src/cordova/plugin/bakaan/tim" />
+        <source-file src="src/android/BitmapUtils.java" target-dir="src/cordova/plugin/bakaan/tim/common" />
+        <source-file src="src/android/ImageUtil.java" target-dir="src/cordova/plugin/bakaan/tim/common" />
+        <source-file src="src/android/FileUtil.java" target-dir="src/cordova/plugin/bakaan/tim/common" />
+        <source-file src="src/android/TimConstants.java" target-dir="src/cordova/plugin/bakaan/tim/common" />
         <framework src="android-build.gradle" custom="true" type="gradleReference" />
     </platform>
     <platform name="ios">
