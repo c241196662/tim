@@ -247,15 +247,20 @@ public class Tim extends CordovaPlugin {
         final JSONObject params;
         List<TIMConversation> TIMSessions = TIMManagerExt.getInstance().getConversationList();
         JSONArray infos = new JSONArray();
-        for (int i = 0; i < TIMSessions.size(); i++) {
-            TIMConversation conversation = TIMSessions.get(i);
-            //将imsdk TIMConversation转换为UIKit SessionInfo
-            SessionInfo sessionInfo = TIMConversation2SessionInfo(conversation);
-            if (sessionInfo != null) {
-                mUnreadTotal = mUnreadTotal + sessionInfo.getUnRead();
-                infos.put(sessionInfo);
-                callbackContext.success(infos);
+        try {
+            for (int i = 0; i < TIMSessions.size(); i++) {
+                TIMConversation conversation = TIMSessions.get(i);
+                //将imsdk TIMConversation转换为UIKit SessionInfo
+                SessionInfo sessionInfo = TIMConversation2SessionInfo(conversation);
+                if (sessionInfo != null) {
+                    mUnreadTotal = mUnreadTotal + sessionInfo.getUnRead();
+                    infos.put(new JSONObject(sessionInfo.toString()));
+
+                }
             }
+            callbackContext.success(infos);
+        } catch (JSONException e) {
+            e.printStackTrace();
         }
     }
 
