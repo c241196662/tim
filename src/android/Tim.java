@@ -55,6 +55,7 @@ public class Tim extends CordovaPlugin {
     public static final String ACTION_SEND = "send"; // 发送
     public static final String ACTION_ADDMESSAGELISTENER = "addmessagelistener"; // 增加消息接收监听
     public static final String ACTION_LOADSESSION = "loadsession"; // 获取历史消息
+    public static final String ACTION_LOADSESSIONLIST = "loadsessionlist"; // 获取所有人的历史消息
 
     public static final String ERROR_INVALID_PARAMETERS = "参数格式错误";
 
@@ -98,6 +99,9 @@ public class Tim extends CordovaPlugin {
                 return true;
             case ACTION_LOADSESSION:
                 this.loadsession(args, callbackContext);
+                return true;
+            case ACTION_LOADSESSIONLIST:
+                this.loadsessionlist(args, callbackContext);
                 return true;
         }
         return false;
@@ -243,7 +247,48 @@ public class Tim extends CordovaPlugin {
         }
     }
 
-    private void loadsession(CordovaArgs args, CallbackContext callbackContext) {
+    private void loadsession(CordovaArgs args, final CallbackContext callbackContext) {
+        final JSONObject params;
+        try {
+            //获取会话扩展实例
+            TIMConversation con = getconversation(args);
+            TIMConversationExt conExt = new TIMConversationExt(con);
+
+            //获取此会话的消息
+            conExt.getLocalMessage(999, //获取此会话最近的 10 条消息
+                    null, //不指定从哪条消息开始获取 - 等同于从最新的消息开始往前
+                    new TIMValueCallBack<List<TIMMessage>>() {//回调接口
+                        @Override
+                        public void onError(int code, String desc) {//获取消息失败
+                            //接口返回了错误码 code 和错误描述 desc，可用于定位请求失败原因
+                            //错误码 code 含义请参见错误码表
+                            Log.d(TAG, "get message failed. code: " + code + " errmsg: " + desc);
+                            callbackContext.error("get message failed. code: " + code + " errmsg: " + desc);
+                        }
+
+                        @Override
+                        public void onSuccess(List<TIMMessage> msgs) {//获取消息成功
+                            //遍历取得的消息
+                            JSONArray json = new JSONArray();
+                            try {
+                                for (TIMMessage msg : msgs) {
+                                    //可以通过 timestamp()获得消息的时间戳, isSelf()是否为自己发送的消息
+                                    Log.e(TAG, "get msg: " + msg.timestamp() + " self: " + msg.isSelf() + " seq: " + msg.getSeq());
+                                    json.put(TIMMessage2JSONObject(msg));
+                                }
+                                callbackContext.success(json);
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                                callbackContext.error("json error");
+                            }
+                        }
+                    });
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void loadsessionlist(CordovaArgs args, CallbackContext callbackContext) {
         final JSONObject params;
         List<TIMConversation> TIMSessions = TIMManagerExt.getInstance().getConversationList();
         JSONArray infos = new JSONArray();
@@ -359,7 +404,7 @@ public class Tim extends CordovaPlugin {
         return json;
     }
 
-//    buildTIMMessageJSONObject
+    //    buildTIMMessageJSONObject
     private JSONObject TIMConversation2JSONObject(TIMConversation session) throws JSONException {
         TIMConversationExt ext = new TIMConversationExt(session);
         TIMMessage msg = ext.getLastMsg();
@@ -373,7 +418,6 @@ public class Tim extends CordovaPlugin {
         json.put("unRead", ext.getUnreadMessageNum());
         return json;
     }
-
 
 
     public static Context getAppContext() {
