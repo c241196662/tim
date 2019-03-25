@@ -280,9 +280,9 @@ public class MessageInfo {
         sb.append("\"fromUser\":\"" + fromUser + "\",");
         sb.append("\"msgType\":" + msgType + ",");
         sb.append("\"status\":" + status + ",");
-        sb.append("\"self\":" + self + "");
-        sb.append("\"read\":" + read + "");
-        sb.append("\"group\":" + group + "");
+        sb.append("\"self\":" + self + ",");
+        sb.append("\"read\":" + read + ",");
+        sb.append("\"group\":" + group + ",");
         sb.append("\"dataUri\":\"" + (dataUri == null ? "" : dataUri.toString()) + "\",");
         sb.append("\"dataPath\":\"" + dataPath + "\",");
         sb.append("\"extra\":\"" + (extra == null ? "" : extra.toString()) + "\",");
