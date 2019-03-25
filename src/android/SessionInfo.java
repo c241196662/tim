@@ -148,7 +148,7 @@ public class SessionInfo implements Serializable, Comparable<SessionInfo> {
         sb.append("\"peer\":\"" + peer + "\",");
         sb.append("\"iconUrl\":\"" + iconUrl + "\",");
         sb.append("\"title\":\"" + title + "\",");
-        sb.append("\"icon\":\"" + icon.toString() + "\",");
+        sb.append("\"icon\":\"" + (icon == null ? "" : icon.toString()) + "\",");
         sb.append("\"isGroup\":\"" + isGroup + "\",");
         sb.append("\"top\":" + top + ",");
         sb.append("\"lastMessageTime\":" + lastMessageTime + ",");
