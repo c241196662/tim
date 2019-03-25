@@ -138,4 +138,22 @@ public class SessionInfo implements Serializable, Comparable<SessionInfo> {
     public int compareTo(@NonNull SessionInfo other) {
         return this.lastMessageTime > other.lastMessageTime ? -1 : 1;
     }
+
+    @Override
+    public String toString() {
+        StringBuffer sb = new StringBuffer();
+        sb.append("{");
+        sb.append("\"unRead\":" + unRead + ",");
+        sb.append("\"sessionId\":\"" + sessionId + "\",");
+        sb.append("\"peer\":\"" + peer + "\",");
+        sb.append("\"iconUrl\":\"" + iconUrl + "\",");
+        sb.append("\"title\":\"" + title + "\",");
+        sb.append("\"icon\":\"" + icon.toString() + "\",");
+        sb.append("\"isGroup\":\"" + isGroup + "\",");
+        sb.append("\"top\":" + top + ",");
+        sb.append("\"lastMessageTime\":" + lastMessageTime + ",");
+        sb.append("\"lastMessage\":" + lastMessage + "");
+        sb.append("}");
+        return sb.toString();
+    }
 }

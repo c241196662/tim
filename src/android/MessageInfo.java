@@ -270,4 +270,26 @@ public class MessageInfo {
 
         return false;
     }
+
+    @Override
+    public String toString() {
+        StringBuffer sb = new StringBuffer();
+        sb.append("{");
+        sb.append("\"peer\":\"" + peer + "\",");
+        sb.append("\"msgId\":" + msgId + ",");
+        sb.append("\"fromUser\":\"" + fromUser + "\",");
+        sb.append("\"msgType\":" + msgType + ",");
+        sb.append("\"status\":" + status + ",");
+        sb.append("\"self\":" + self + "");
+        sb.append("\"read\":" + read + "");
+        sb.append("\"group\":" + group + "");
+        sb.append("\"dataUri\":\"" + dataUri.toString() + "\",");
+        sb.append("\"dataPath\":\"" + dataPath + "\",");
+        sb.append("\"extra\":\"" + extra.toString() + "\",");
+        sb.append("\"msgTime\":" + msgTime + ",");
+        sb.append("\"imgWithd\":" + imgWithd + ",");
+        sb.append("\"imgHeight\":" + imgHeight + "");
+        sb.append("}");
+        return sb.toString();
+    }
 }
