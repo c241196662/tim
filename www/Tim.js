@@ -60,8 +60,8 @@ module.exports = {
      * @example
      * <code>
      * Tim.send({
-		   selto: 0, // 接受者ID
-		   conversationType: 1, // 消息类型, 1为个人, 2为群组, 可不填,默认为1
+	 *	   selto: 0, // 接受者ID
+	 *	   conversationType: 1, // 消息类型, 1为个人, 2为群组, 可不填,默认为1
      *     msg: 'a bew test msg' // 文本内容
      * }, function (msg) {
      *     alert("msg: " + msg);
@@ -93,14 +93,31 @@ module.exports = {
     *
     * @example
     * <code>
-    * Tim.loadsession({}, function (conversationlist) {
+    * Tim.loadsession({
+    *   selto: 0, // 接受者ID
+    * }, function (conversationlist) {
     *     alert("conversationlist: " + conversationlist);
     * }, function (reason) {
     *     alert("Failed: " + reason);
     * });
     * </code>
     */
-   loadsession: function (message, onSuccess, onError) {
-       exec(onSuccess, onError, "Tim", "loadsession", [message]);
-   }
+    loadsession: function (message, onSuccess, onError) {
+        exec(onSuccess, onError, "Tim", "loadsession", [message]);
+    },
+    /**
+    * 接收所有消息
+    *
+    * @example
+    * <code>
+    * Tim.loadsessionlist({}, function (conversationlist) {
+    *     alert("conversationlist: " + conversationlist);
+    * }, function (reason) {
+    *     alert("Failed: " + reason);
+    * });
+    * </code>
+    */
+    loadsessionlist: function (message, onSuccess, onError) {
+        exec(onSuccess, onError, "Tim", "loadsessionlist", [message]);
+    }
 };
