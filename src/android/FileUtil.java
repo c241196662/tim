@@ -38,37 +38,37 @@ public class FileUtil {
 
     public static void initPath() {
 
-        File f = new File(UIKitConstants.MEDIA_DIR);
+        File f = new File(TimConstants.MEDIA_DIR);
         if (!f.exists()) {
             f.mkdirs();
         }
 
-        f = new File(UIKitConstants.RECORD_DIR);
+        f = new File(TimConstants.RECORD_DIR);
         if (!f.exists()) {
             f.mkdirs();
         }
 
-        f = new File(UIKitConstants.RECORD_DOWNLOAD_DIR);
+        f = new File(TimConstants.RECORD_DOWNLOAD_DIR);
         if (!f.exists()) {
             f.mkdirs();
         }
 
-        f = new File(UIKitConstants.VIDEO_DOWNLOAD_DIR);
+        f = new File(TimConstants.VIDEO_DOWNLOAD_DIR);
         if (!f.exists()) {
             f.mkdirs();
         }
 
-        f = new File(UIKitConstants.IMAGE_DOWNLOAD_DIR);
+        f = new File(TimConstants.IMAGE_DOWNLOAD_DIR);
         if (!f.exists()) {
             f.mkdirs();
         }
 
-        f = new File(UIKitConstants.FILE_DOWNLOAD_DIR);
+        f = new File(TimConstants.FILE_DOWNLOAD_DIR);
         if (!f.exists()) {
             f.mkdirs();
         }
 
-        f = new File(UIKitConstants.CRASH_LOG_DIR);
+        f = new File(TimConstants.CRASH_LOG_DIR);
         if (!f.exists()) {
             f.mkdirs();
         }
@@ -76,7 +76,7 @@ public class FileUtil {
     }
 
     public static String saveBitmap(String dir, Bitmap b) {
-        String jpegName = UIKitConstants.MEDIA_DIR + File.separator + "picture_" + new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date()) + ".jpg";
+        String jpegName = TimConstants.MEDIA_DIR + File.separator + "picture_" + new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date()) + ".jpg";
         try {
             FileOutputStream fout = new FileOutputStream(jpegName);
             BufferedOutputStream bos = new BufferedOutputStream(fout);
@@ -182,7 +182,7 @@ public class FileUtil {
     }
 
     public static boolean checkAudioExist(String fileName) {
-        File file = new File(UIKitConstants.RECORD_DOWNLOAD_DIR);
+        File file = new File(TimConstants.RECORD_DOWNLOAD_DIR);
         if (!file.exists())
             return false;
         String files[] = file.list();
@@ -463,9 +463,9 @@ public class FileUtil {
 
     public static String reNameFile(File file, final String fileName) {
 
-        String filePath = UIKitConstants.FILE_DOWNLOAD_DIR + fileName;
+        String filePath = TimConstants.FILE_DOWNLOAD_DIR + fileName;
         if (new File(filePath).exists()) {
-            File baseFile = new File(UIKitConstants.FILE_DOWNLOAD_DIR);
+            File baseFile = new File(TimConstants.FILE_DOWNLOAD_DIR);
             FileFilter fileFilter = new FileFilter() {
 
                 @Override
@@ -492,7 +492,7 @@ public class FileUtil {
                 index++;
             }
             String newName = fileName + "(" + index + ")";
-            File dest = new File(UIKitConstants.FILE_DOWNLOAD_DIR + newName);
+            File dest = new File(TimConstants.FILE_DOWNLOAD_DIR + newName);
             file.renameTo(dest);
             return newName;
         } else {

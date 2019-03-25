@@ -36,7 +36,7 @@ import java.util.List;
 
 import cordova.plugin.bakaan.tim.common.FileUtil;
 import cordova.plugin.bakaan.tim.common.ImageUtil;
-import cordova.plugin.bakaan.tim.common.UIKitConstants;
+import cordova.plugin.bakaan.tim.common.TimConstants;
 
 /**
  * Created by valexhuang on 2018/8/6.
@@ -84,7 +84,7 @@ public class MessageInfoUtil {
         final TIMImageElem ele = new TIMImageElem();
         //不是应用自己拍摄的照片，先copy一份过来
         if (!appPohto) {
-            ImageUtil.CopyImageInfo copInfo = ImageUtil.copyImage(uri, UIKitConstants.IMAGE_DOWNLOAD_DIR);
+            ImageUtil.CopyImageInfo copInfo = ImageUtil.copyImage(uri, TimConstants.IMAGE_DOWNLOAD_DIR);
             if (copInfo == null)
                 return null;
             ele.setPath(copInfo.getPath());
@@ -358,7 +358,7 @@ public class MessageInfoUtil {
                     if (msgInfo.isSelf()) {
                         msgInfo.setDataPath(soundElemEle.getPath());
                     } else {
-                        final String path = UIKitConstants.RECORD_DOWNLOAD_DIR + soundElemEle.getUuid();
+                        final String path = TimConstants.RECORD_DOWNLOAD_DIR + soundElemEle.getUuid();
                         File file = new File(path);
                         if (!file.exists()) {
                             soundElemEle.getSoundToFile(path, new TIMCallBack() {
@@ -392,7 +392,7 @@ public class MessageInfoUtil {
                         for (int i = 0; i < imgs.size(); i++) {
                             TIMImage img = imgs.get(i);
                             if (img.getType() == TIMImageType.Thumb) {
-                                final String path = UIKitConstants.IMAGE_DOWNLOAD_DIR + img.getUuid();
+                                final String path = TimConstants.IMAGE_DOWNLOAD_DIR + img.getUuid();
                                 msgInfo.setImgWithd((int) img.getWidth());
                                 msgInfo.setImgHeight((int) img.getHeight());
                                 File file = new File(path);
@@ -414,13 +414,13 @@ public class MessageInfoUtil {
                         msgInfo.setDataUri(FileUtil.getUriFromPath(videoEle.getVideoPath()));
                     } else {
                         TIMVideo video = videoEle.getVideoInfo();
-                        final String videoPath = UIKitConstants.VIDEO_DOWNLOAD_DIR + video.getUuid();
+                        final String videoPath = TimConstants.VIDEO_DOWNLOAD_DIR + video.getUuid();
                         Uri uri = Uri.parse(videoPath);
                         msgInfo.setDataUri(uri);
                         TIMSnapshot snapshot = videoEle.getSnapshotInfo();
                         msgInfo.setImgWithd((int) snapshot.getWidth());
                         msgInfo.setImgHeight((int) snapshot.getHeight());
-                        final String snapPath = UIKitConstants.IMAGE_DOWNLOAD_DIR + snapshot.getUuid();
+                        final String snapPath = TimConstants.IMAGE_DOWNLOAD_DIR + snapshot.getUuid();
                         //判断快照是否存在,不存在自动下载
                         if (new File(snapPath).exists()) {
                             msgInfo.setDataPath(snapPath);
@@ -430,7 +430,7 @@ public class MessageInfoUtil {
                     msgInfo.setExtra("[视频]");
                 } else if (type == TIMElemType.File) {
                     TIMFileElem fileElem = (TIMFileElem) ele;
-                    final String path = UIKitConstants.FILE_DOWNLOAD_DIR + fileElem.getUuid();
+                    final String path = TimConstants.FILE_DOWNLOAD_DIR + fileElem.getUuid();
                     if (!msgInfo.isSelf()) {
                         File file = new File(path);
                         if (!file.exists()) {
@@ -492,7 +492,7 @@ public class MessageInfoUtil {
                 TIMVideoElem videoEle = (TIMVideoElem) ele;
                 TIMVideo video = (TIMVideo) videoEle.getVideoInfo();
                 TIMSnapshot snapshot = videoEle.getSnapshotInfo();
-                final String snapPath = UIKitConstants.IMAGE_DOWNLOAD_DIR + video.getUuid();
+                final String snapPath = TimConstants.IMAGE_DOWNLOAD_DIR + video.getUuid();
                 //判断快照是否存在,不存在自动下载
                 if (!new File(snapPath).exists()) {
                     snapshot.getImage(snapPath, callBack);
@@ -504,7 +504,7 @@ public class MessageInfoUtil {
                 for (int i = 0; i < imgs.size(); i++) {
                     TIMImage img = imgs.get(i);
                     if (img.getType() == TIMImageType.Thumb) {
-                        final String path = UIKitConstants.IMAGE_DOWNLOAD_DIR + img.getUuid();
+                        final String path = TimConstants.IMAGE_DOWNLOAD_DIR + img.getUuid();
                         File file = new File(path);
                         if (!file.exists()) {
                             img.getImage(path, callBack);
