@@ -230,7 +230,7 @@ public class Tim extends CordovaPlugin {
                     Log.e(TAG, "SendMsg ok");
                     JSONObject json = new JSONObject();
                     try {
-                        json = buildTIMMessageJSONObject(msg);
+                        json = TIMMessage2JSONObject(msg);
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
@@ -251,10 +251,10 @@ public class Tim extends CordovaPlugin {
             for (int i = 0; i < TIMSessions.size(); i++) {
                 TIMConversation conversation = TIMSessions.get(i);
                 //将imsdk TIMConversation转换为UIKit SessionInfo
-                SessionInfo sessionInfo = TIMConversation2SessionInfo(conversation);
-                if (sessionInfo != null) {
-                    mUnreadTotal = mUnreadTotal + sessionInfo.getUnRead();
-                    infos.put(new JSONObject(sessionInfo.toString()));
+                JSONObject json = TIMConversation2JSONObject(conversation);
+                if (json != null) {
+                    mUnreadTotal = mUnreadTotal + json.getInt("unRead");
+                    infos.put(json);
 
                 }
             }
@@ -299,7 +299,7 @@ public class Tim extends CordovaPlugin {
                 try {
                     if (msgs.size() > 0) {
                         for (int i = 0; i < msgs.size(); i++) {
-                            msgjson.put(buildTIMMessageJSONObject(msgs.get(i)));
+                            msgjson.put(TIMMessage2JSONObject(msgs.get(i)));
                         }
                     }
                 } catch (JSONException e) {
@@ -324,7 +324,7 @@ public class Tim extends CordovaPlugin {
         callbackContext.success("success");
     }
 
-    private JSONObject buildTIMMessageJSONObject(TIMMessage msg) throws JSONException {
+    private JSONObject TIMMessage2JSONObject(TIMMessage msg) throws JSONException {
         JSONObject json = new JSONObject();
         JSONArray elements = new JSONArray();
         long count = msg.getElementCount();
@@ -359,46 +359,21 @@ public class Tim extends CordovaPlugin {
         return json;
     }
 
-    /**
-     * TIMConversation转换为SessionInfo
-     *
-     * @param session
-     * @return
-     */
-    private SessionInfo TIMConversation2SessionInfo(TIMConversation session) {
+//    buildTIMMessageJSONObject
+    private JSONObject TIMConversation2JSONObject(TIMConversation session) throws JSONException {
         TIMConversationExt ext = new TIMConversationExt(session);
-        TIMMessage message = ext.getLastMsg();
-        if (message == null)
-            return null;
-        SessionInfo info = new SessionInfo();
-        TIMConversationType type = session.getType();
-        if (type == TIMConversationType.System) {
-            if (message.getElementCount() > 0) {
-                TIMElem ele = message.getElement(0);
-                TIMElemType eleType = ele.getType();
-                if (eleType == TIMElemType.GroupSystem) {
-                    TIMGroupSystemElem groupSysEle = (TIMGroupSystemElem) ele;
-                    // 群系统消息处理，不需要显示信息的
-                    // groupSystMsgHandle(groupSysEle);
-                }
-            }
+        TIMMessage msg = ext.getLastMsg();
+        if ("".equals(session.getPeer()) || session.getPeer() == null) {
             return null;
         }
-
-        boolean isGroup = type == TIMConversationType.Group;
-        info.setLastMessageTime(message.timestamp() * 1000);
-        MessageInfo msg = MessageInfoUtil.TIMMessage2MessageInfo(message, isGroup);
-        info.setLastMessage(msg);
-        if (isGroup)
-            info.setTitle(session.getGroupName());
-        else
-            info.setTitle(session.getPeer());
-        info.setPeer(session.getPeer());
-        info.setGroup(session.getType() == TIMConversationType.Group);
-        if (ext.getUnreadMessageNum() > 0)
-            info.setUnRead((int) ext.getUnreadMessageNum());
-        return info;
+        if (msg == null) {
+            return null;
+        }
+        JSONObject json = TIMMessage2JSONObject(msg);
+        json.put("unRead", ext.getUnreadMessageNum());
+        return json;
     }
+
 
 
     public static Context getAppContext() {
