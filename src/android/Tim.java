@@ -1,335 +1,402 @@
-/*
-       Licensed to the Apache Software Foundation (ASF) under one
-       or more contributor license agreements.  See the NOTICE file
-       distributed with this work for additional information
-       regarding copyright ownership.  The ASF licenses this file
-       to you under the Apache License, Version 2.0 (the
-       "License"); you may not use this file except in compliance
-       with the License.  You may obtain a copy of the License at
+package cordova.plugin.bakaan.tim;
 
-         http://www.apache.org/licenses/LICENSE-2.0
+import android.app.Activity;
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.os.Environment;
+import android.util.Log;
 
-       Unless required by applicable law or agreed to in writing,
-       software distributed under the License is distributed on an
-       "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-       KIND, either express or implied.  See the License for the
-       specific language governing permissions and limitations
-       under the License.
-*/
+import org.apache.cordova.CordovaArgs;
+import org.apache.cordova.CordovaInterface;
+import org.apache.cordova.CordovaPlugin;
+import org.apache.cordova.CallbackContext;
 
-apply plugin: 'com.android.application'
+import com.tencent.imsdk.TIMCallBack;
+import com.tencent.imsdk.TIMConversation;
+import com.tencent.imsdk.TIMConversationType;
+import com.tencent.imsdk.TIMCustomElem;
+import com.tencent.imsdk.TIMElem;
+import com.tencent.imsdk.TIMElemType;
+import com.tencent.imsdk.TIMGroupSystemElem;
+import com.tencent.imsdk.TIMGroupSystemElemType;
+import com.tencent.imsdk.TIMLogLevel;
+import com.tencent.imsdk.TIMManager;
+import com.tencent.imsdk.TIMMessage;
+import com.tencent.imsdk.TIMMessageListener;
+import com.tencent.imsdk.TIMSdkConfig;
+import com.tencent.imsdk.TIMTextElem;
+import com.tencent.imsdk.TIMValueCallBack;
+import com.tencent.imsdk.ext.message.TIMConversationExt;
+import com.tencent.imsdk.ext.message.TIMManagerExt;
 
-buildscript {
-    repositories {
-        mavenCentral()
-        maven {
-            url "https://maven.google.com"
-        }
-        jcenter()
-        google()
-    }
+import org.apache.cordova.CordovaWebView;
+import org.apache.cordova.PluginResult;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
-    dependencies {
-        classpath 'com.android.tools.build:gradle:3.3.2'
-    }
-}
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
-// Allow plugins to declare Maven dependencies via build-extras.gradle.
-allprojects {
-    repositories {
-        mavenCentral();
-        jcenter()
-    }
-}
+import cn.jpush.android.api.JPushInterface;
 
-task wrapper(type: Wrapper) {
-    gradleVersion = '4.1.0'
-}
-
-// Configuration properties. Set these via environment variables, build-extras.gradle, or gradle.properties.
-// Refer to: http://www.gradle.org/docs/current/userguide/tutorial_this_and_that.html
-ext {
-    apply from: '../CordovaLib/cordova.gradle'
-    // The value for android.compileSdkVersion.
-    if (!project.hasProperty('cdvCompileSdkVersion')) {
-        cdvCompileSdkVersion = null;
-    }
-    // The value for android.buildToolsVersion.
-    if (!project.hasProperty('cdvBuildToolsVersion')) {
-        cdvBuildToolsVersion = null;
-    }
-    // Sets the versionCode to the given value.
-    if (!project.hasProperty('cdvVersionCode')) {
-        cdvVersionCode = null
-    }
-    // Sets the minSdkVersion to the given value.
-    if (!project.hasProperty('cdvMinSdkVersion')) {
-        cdvMinSdkVersion = null
-    }
-    // Whether to build architecture-specific APKs.
-    if (!project.hasProperty('cdvBuildMultipleApks')) {
-        cdvBuildMultipleApks = null
-    }
-    // Whether to append a 0 "abi digit" to versionCode when only a single APK is build
-    if (!project.hasProperty('cdvVersionCodeForceAbiDigit')) {
-        cdvVersionCodeForceAbiDigit = null
-    }
-    // .properties files to use for release signing.
-    if (!project.hasProperty('cdvReleaseSigningPropertiesFile')) {
-        cdvReleaseSigningPropertiesFile = null
-    }
-    // .properties files to use for debug signing.
-    if (!project.hasProperty('cdvDebugSigningPropertiesFile')) {
-        cdvDebugSigningPropertiesFile = null
-    }
-    // Set by build.js script.
-    if (!project.hasProperty('cdvBuildArch')) {
-        cdvBuildArch = null
-    }
-
-    // Plugin gradle extensions can append to this to have code run at the end.
-    cdvPluginPostBuildExtras = []
-}
-
-// PLUGIN GRADLE EXTENSIONS START
-apply from: "../cordova-plugin-adam-wechat/hellocordova-android-build.gradle"
-apply from: "../cordova-plugin-bakaan-tim/hellocordova-android-build.gradle"
-// PLUGIN GRADLE EXTENSIONS END
-
-def hasBuildExtras1 = file('build-extras.gradle').exists()
-if (hasBuildExtras1) {
-    apply from: 'build-extras.gradle'
-}
-
-def hasBuildExtras2 = file('../build-extras.gradle').exists()
-if (hasBuildExtras2) {
-    apply from: '../build-extras.gradle'
-}
-
-// Set property defaults after extension .gradle files.
-if (ext.cdvCompileSdkVersion == null) {
-    ext.cdvCompileSdkVersion = privateHelpers.getProjectTarget()
-    //ext.cdvCompileSdkVersion = project.ext.defaultCompileSdkVersion
-}
-if (ext.cdvBuildToolsVersion == null) {
-    ext.cdvBuildToolsVersion = privateHelpers.findLatestInstalledBuildTools()
-    //ext.cdvBuildToolsVersion = project.ext.defaultBuildToolsVersion
-}
-if (ext.cdvDebugSigningPropertiesFile == null && file('../debug-signing.properties').exists()) {
-    ext.cdvDebugSigningPropertiesFile = '../debug-signing.properties'
-}
-if (ext.cdvReleaseSigningPropertiesFile == null && file('../release-signing.properties').exists()) {
-    ext.cdvReleaseSigningPropertiesFile = '../release-signing.properties'
-}
-
-// Cast to appropriate types.
-ext.cdvBuildMultipleApks = cdvBuildMultipleApks == null ? false : cdvBuildMultipleApks.toBoolean();
-ext.cdvVersionCodeForceAbiDigit = cdvVersionCodeForceAbiDigit == null ? false : cdvVersionCodeForceAbiDigit.toBoolean();
-ext.cdvMinSdkVersion = cdvMinSdkVersion == null ? defaultMinSdkVersion : Integer.parseInt('' + cdvMinSdkVersion)
-ext.cdvVersionCode = cdvVersionCode == null ? null : Integer.parseInt('' + cdvVersionCode)
-
-def computeBuildTargetName(debugBuild) {
-    def ret = 'assemble'
-    if (cdvBuildMultipleApks && cdvBuildArch) {
-        def arch = cdvBuildArch == 'arm' ? 'armv7' : cdvBuildArch
-        ret += '' + arch.toUpperCase().charAt(0) + arch.substring(1);
-    }
-    return ret + (debugBuild ? 'Debug' : 'Release')
-}
-
-// Make cdvBuild a task that depends on the debug/arch-sepecific task.
-task cdvBuildDebug
-cdvBuildDebug.dependsOn {
-    return computeBuildTargetName(true)
-}
-
-task cdvBuildRelease
-cdvBuildRelease.dependsOn {
-    return computeBuildTargetName(false)
-}
-
-task cdvPrintProps << {
-    println('cdvCompileSdkVersion=' + cdvCompileSdkVersion)
-    println('cdvBuildToolsVersion=' + cdvBuildToolsVersion)
-    println('cdvVersionCode=' + cdvVersionCode)
-    println('cdvVersionCodeForceAbiDigit=' + cdvVersionCodeForceAbiDigit)
-    println('cdvMinSdkVersion=' + cdvMinSdkVersion)
-    println('cdvBuildMultipleApks=' + cdvBuildMultipleApks)
-    println('cdvReleaseSigningPropertiesFile=' + cdvReleaseSigningPropertiesFile)
-    println('cdvDebugSigningPropertiesFile=' + cdvDebugSigningPropertiesFile)
-    println('cdvBuildArch=' + cdvBuildArch)
-    println('computedVersionCode=' + android.defaultConfig.versionCode)
-    android.productFlavors.each { flavor ->
-        println('computed' + flavor.name.capitalize() + 'VersionCode=' + flavor.versionCode)
-    }
-}
-
-android {
-
-    defaultConfig {
-        versionCode cdvVersionCode ?: new BigInteger("" + privateHelpers.extractIntFromManifest("versionCode"))
-        applicationId privateHelpers.extractStringFromManifest("package")
-        minSdkVersion 20
-        targetSdkVersion(25)
-
-        if (cdvMinSdkVersion != null) {
-            minSdkVersion cdvMinSdkVersion
-        }
-    }
-
-    lintOptions {
-      abortOnError false;
-    }
-
-    compileSdkVersion cdvCompileSdkVersion
-    buildToolsVersion cdvBuildToolsVersion
-
-    // This code exists for Crosswalk and other Native APIs.
-    // By default, we multiply the existing version code in the
-    // Android Manifest by 10 and add a number for each architecture.
-    // If you are not using Crosswalk or SQLite, you can
-    // ignore this chunk of code, and your version codes will be respected.
-
-    if (Boolean.valueOf(cdvBuildMultipleApks)) {
-        flavorDimensions "default"
-
-        productFlavors {
-            armeabi {
-                versionCode defaultConfig.versionCode*10 + 1
-                ndk {
-                    abiFilters = ["armeabi"]
-                }
-            }
-            armv7 {
-                versionCode defaultConfig.versionCode*10 + 2
-                ndk {
-                    abiFilters = ["armeabi-v7a"]
-                }
-            }
-            arm64 {
-                versionCode defaultConfig.versionCode*10 + 3
-                ndk {
-                    abiFilters = ["arm64-v8a"]
-                }
-            }
-            x86 {
-                versionCode defaultConfig.versionCode*10 + 4
-                ndk {
-                    abiFilters = ["x86"]
-                }
-            }
-            x86_64 {
-                versionCode defaultConfig.versionCode*10 + 5
-                ndk {
-                    abiFilters = ["x86_64"]
-                }
-            }
-        }
-    } else if (Boolean.valueOf(cdvVersionCodeForceAbiDigit)) {
-        // This provides compatibility to the default logic for versionCode before cordova-android 5.2.0
-        defaultConfig {
-            versionCode defaultConfig.versionCode*10
-        }
-    }
-
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
-        incremental false
-    }
-
-    if (cdvReleaseSigningPropertiesFile) {
-        signingConfigs {
-            release {
-                // These must be set or Gradle will complain (even if they are overridden).
-                keyAlias = ""
-                keyPassword = "__unset" // And these must be set to non-empty in order to have the signing step added to the task graph.
-                storeFile = null
-                storePassword = "__unset"
-            }
-        }
-        buildTypes {
-            release {
-                signingConfig signingConfigs.release
-            }
-        }
-        addSigningProps(cdvReleaseSigningPropertiesFile, signingConfigs.release)
-    }
-    if (cdvDebugSigningPropertiesFile) {
-        addSigningProps(cdvDebugSigningPropertiesFile, signingConfigs.debug)
-    }
-}
-
-/*
- * WARNING: Cordova Lib and platform scripts do management inside of this code here,
- * if you are adding the dependencies manually, do so outside the comments, otherwise
- * the Cordova tools will overwrite them
+/**
+ * This class echoes a string called from JavaScript.
  */
+public class Tim extends CordovaPlugin {
 
+    private static final String TAG = Tim.class.getSimpleName();
+    private final static String TOP_LIST = "top_list";
 
-dependencies {
-    implementation fileTree(dir: 'libs', include: '*.jar')
-    implementation(project(path: ":CordovaLib"))
-    implementation 'com.android.support:support-annotations:20.0.0'
-    implementation 'com.android.support:support-v4:24.1.1'
-}
+    public static final String ACTION_INIT = "init"; // 初始化
+    public static final String ACTION_LOGIN = "login"; // 登录
+    public static final String ACTION_LOGOUT = "logout"; // 登出
+    public static final String ACTION_SEND = "send"; // 发送
+    public static final String ACTION_ADDMESSAGELISTENER = "addmessagelistener"; // 增加消息接收监听
+    public static final String ACTION_LOADSESSION = "loadsession"; // 获取历史消息
 
-def promptForReleaseKeyPassword() {
-    if (!cdvReleaseSigningPropertiesFile) {
-        return;
-    }
-    if ('__unset'.equals(android.signingConfigs.release.storePassword)) {
-        android.signingConfigs.release.storePassword = privateHelpers.promptForPassword('Enter key store password: ')
-    }
-    if ('__unset'.equals(android.signingConfigs.release.keyPassword)) {
-        android.signingConfigs.release.keyPassword = privateHelpers.promptForPassword('Enter key password: ');
-    }
-}
+    public static final String ERROR_INVALID_PARAMETERS = "参数格式错误";
 
-gradle.taskGraph.whenReady { taskGraph ->
-    taskGraph.getAllTasks().each() { task ->
-      if(['validateReleaseSigning', 'validateSigningRelease', 'validateSigningArmv7Release', 'validateSigningX76Release'].contains(task.name)) {
-         promptForReleaseKeyPassword()
-      }
-    }
-}
+    protected static int sdkAppId;
 
-def addSigningProps(propsFilePath, signingConfig) {
-    def propsFile = file(propsFilePath)
-    def props = new Properties()
-    propsFile.withReader { reader ->
-        props.load(reader)
+    private static Context mContext;
+    private static Activity cordovaActivity;
+
+    private Set<String> mTopList;
+    private SharedPreferences mSessionPreferences;
+
+    private int mUnreadTotal;
+
+    @Override
+    public void initialize(CordovaInterface cordova, CordovaWebView webView) {
+        super.initialize(cordova, webView);
+        mContext = cordova.getActivity().getApplicationContext();
+
+        JPushInterface.init(mContext);
+
+        cordovaActivity = cordova.getActivity();
     }
 
-    def storeFile = new File(props.get('key.store') ?: privateHelpers.ensureValueExists(propsFilePath, props, 'storeFile'))
-    if (!storeFile.isAbsolute()) {
-        storeFile = RelativePath.parse(true, storeFile.toString()).getFile(propsFile.getParentFile())
+    @Override
+    public boolean execute(String action, CordovaArgs args, CallbackContext callbackContext) {
+        switch (action) {
+            case ACTION_INIT:
+                this.init(args, callbackContext);
+                return true;
+            case ACTION_LOGIN:
+                this.login(args, callbackContext);
+                return true;
+            case ACTION_LOGOUT:
+                this.logout(args, callbackContext);
+                return true;
+            case ACTION_SEND:
+                this.send(args, callbackContext);
+                return true;
+            case ACTION_ADDMESSAGELISTENER:
+                this.addMessageListener(callbackContext);
+                return true;
+            case ACTION_LOADSESSION:
+                this.loadsession(args, callbackContext);
+                return true;
+        }
+        return false;
     }
-    if (!storeFile.exists()) {
-        throw new FileNotFoundException('Keystore file does not exist: ' + storeFile.getAbsolutePath())
-    }
-    signingConfig.keyAlias = props.get('key.alias') ?: privateHelpers.ensureValueExists(propsFilePath, props, 'keyAlias')
-    signingConfig.keyPassword = props.get('keyPassword', props.get('key.alias.password', signingConfig.keyPassword))
-    signingConfig.storeFile = storeFile
-    signingConfig.storePassword = props.get('storePassword', props.get('key.store.password', signingConfig.storePassword))
-    def storeType = props.get('storeType', props.get('key.store.type', ''))
-    if (!storeType) {
-        def filename = storeFile.getName().toLowerCase();
-        if (filename.endsWith('.p12') || filename.endsWith('.pfx')) {
-            storeType = 'pkcs12'
-        } else {
-            storeType = signingConfig.storeType // "jks"
+
+    private void init(CordovaArgs args, CallbackContext callbackContext) {
+
+        final JSONObject params;
+        try {
+            params = args.getJSONObject(0);
+            sdkAppId = params.getInt("sdkAppId");
+            boolean enableLogPrint = params.has("enableLogPrint") ? params.getBoolean("enableLogPrint") : false;
+            String accountType = params.has("accountType") ? params.getString("accountType") : "0";
+            // 初始化 SDK 基本配置
+            TIMSdkConfig config = new TIMSdkConfig(sdkAppId).setAccoutType(accountType).enableLogPrint(enableLogPrint) // 是否在控制台打印Log?
+                    .setLogLevel(TIMLogLevel.DEBUG) // Log输出级别（debug级别会很多）
+                    .setLogPath(Environment.getExternalStorageDirectory().getPath() + "/timlogs/");
+            // Log文件存放在哪里？
+
+            // 初始化 SDK
+            TIMManager.getInstance().init(cordovaActivity.getApplicationContext(), config);
+            sendNoResultPluginResult(callbackContext);
+        } catch (JSONException e) {
+            callbackContext.error(ERROR_INVALID_PARAMETERS);
+            return;
         }
     }
-    signingConfig.storeType = storeType
-}
 
-for (def func : cdvPluginPostBuildExtras) {
-    func()
-}
+    private void login(CordovaArgs args, final CallbackContext callbackContext) {
+        final JSONObject params;
+        try {
+            params = args.getJSONObject(0);
+            String identifier = params.getString("identifier");
+            String userSig = params.getString("userSig");
+            // identifier为用户名，userSig 为用户登录凭证
+            TIMManager.getInstance().login(identifier, userSig, new TIMCallBack() {
+                @Override
+                public void onError(int code, String desc) {
+                    //错误码 code 和错误描述 desc，可用于定位请求失败原因
+                    //错误码 code 列表请参见错误码表
+                    Log.d(TAG, "login failed. code: " + code + " errmsg: " + desc);
+                    JSONObject json = new JSONObject();
+                    try {
+                        json.put("code", code);
+                        json.put("desc", desc);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                    callbackContext.error(json);
+                }
 
-// This can be defined within build-extras.gradle as:
-//     ext.postBuildExtras = { ... code here ... }
-if (hasProperty('postBuildExtras')) {
-    postBuildExtras()
+                @Override
+                public void onSuccess() {
+                    Log.d(TAG, "login succ");
+                    sendNoResultPluginResult(callbackContext);
+                }
+            });
+        } catch (JSONException e) {
+            callbackContext.error(ERROR_INVALID_PARAMETERS);
+            return;
+        }
+    }
+
+    private void logout(CordovaArgs args, final CallbackContext callbackContext) {
+        final JSONObject params;
+        try {
+            params = args.getJSONObject(0);
+            String identifier = params.getString("identifier");
+            String userSig = params.getString("userSig");
+            // identifier为用户名，userSig 为用户登录凭证
+            TIMManager.getInstance().logout(new TIMCallBack() {
+                @Override
+                public void onError(int code, String desc) {
+                    Log.d(TAG, "login failed. code: " + code + " errmsg: " + desc);
+                    JSONObject json = new JSONObject();
+                    try {
+                        json.put("code", code);
+                        json.put("desc", desc);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                    callbackContext.error(json);
+                }
+
+                @Override
+                public void onSuccess() {
+                    Log.d(TAG, "login succ");
+                    sendNoResultPluginResult(callbackContext);
+                }
+            });
+        } catch (JSONException e) {
+            callbackContext.error(ERROR_INVALID_PARAMETERS);
+            return;
+        }
+    }
+
+    private void send(CordovaArgs args, final CallbackContext callbackContext) {
+        final JSONObject params;
+        try {
+            params = args.getJSONObject(0);
+            String msgcontent = params.getString("msg");
+            //构造一条消息并添加一个文本内容
+            TIMMessage msg = new TIMMessage();
+            TIMTextElem elem = new TIMTextElem();
+            elem.setText(msgcontent);
+            msg.addElement(elem);
+
+            String selto = params.getString("selto");//获取与用户/群组 的会话
+            Log.i(TAG, "coversation start: selto = " + selto + ",   msg = " + msgcontent);
+            TIMConversation conversation = getconversation(args);
+            Log.i(TAG, "send message start");
+            //发送消息
+            conversation.sendMessage(msg, new TIMValueCallBack<TIMMessage>() {
+                @Override
+                public void onError(int code, String desc) {//发送消息失败
+                    //错误码 code 和错误描述 desc，可用于定位请求失败原因
+                    Log.d(TAG, "send message failed. code: " + code + " errmsg: " + desc);
+                    JSONObject json = new JSONObject();
+                    try {
+                        json.put("code", code);
+                        json.put("desc", desc);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                    callbackContext.error(json);
+                }
+
+                @Override
+                public void onSuccess(TIMMessage msg) {//发送消息成功
+                    Log.e(TAG, "SendMsg ok");
+                    JSONObject json = new JSONObject();
+                    try {
+                        json = buildTIMMessageJSONObject(msg);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                    callbackContext.success(json);
+                }
+            });
+        } catch (JSONException e) {
+            callbackContext.error(ERROR_INVALID_PARAMETERS);
+            return;
+        }
+    }
+
+    private void loadsession(CordovaArgs args, CallbackContext callbackContext) {
+        final JSONObject params;
+        List<TIMConversation> TIMSessions = TIMManagerExt.getInstance().getConversationList();
+        JSONArray infos = new JSONArray();
+        for (int i = 0; i < TIMSessions.size(); i++) {
+            TIMConversation conversation = TIMSessions.get(i);
+            //将imsdk TIMConversation转换为UIKit SessionInfo
+            SessionInfo sessionInfo = TIMConversation2SessionInfo(conversation);
+            if (sessionInfo != null) {
+                mUnreadTotal = mUnreadTotal + sessionInfo.getUnRead();
+                infos.put(sessionInfo);
+                callbackContext.success(infos);
+            }
+        }
+    }
+
+    /**
+     * 获取回话, 读取/发送消息用
+     *
+     * @param args
+     * @return
+     */
+    private TIMConversation getconversation(CordovaArgs args) throws JSONException {
+
+        final JSONObject params;
+        try {
+            params = args.getJSONObject(0);
+            int conversationType = params.has("conversationType") ? params.getInt("conversationType") : 1;
+
+            //获取会话
+            String selto = params.getString("selto");//获取与用户/群组 的会话
+            TIMConversation conversation = TIMManager.getInstance().getConversation(
+                    conversationType == 1 ? TIMConversationType.C2C : TIMConversationType.Group,    //会话类型：单聊/群组
+                    selto);                      //会话对方用户帐号//对方ID/群组 ID
+            return conversation;
+        } catch (JSONException e) {
+            return null;
+        }
+    }
+
+    private void addMessageListener(final CallbackContext callbackContext) {
+        //设置消息监听器，收到新消息时，通过此监听器回调
+        TIMManager.getInstance().addMessageListener(new TIMMessageListener() {//消息监听器
+            @Override
+            public boolean onNewMessages(List<TIMMessage> msgs) {//收到新消息
+                //消息的内容解析请参考消息收发文档中的消息解析说明
+                JSONObject json = new JSONObject();
+                JSONArray msgjson = new JSONArray();
+                try {
+                    if (msgs.size() > 0) {
+                        for (int i = 0; i < msgs.size(); i++) {
+                            msgjson.put(buildTIMMessageJSONObject(msgs.get(i)));
+                        }
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+                try {
+                    json.put("msgs", msgjson);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+                callbackContext.success(json);
+                return true; //返回true将终止回调链，不再调用下一个新消息监听器
+            }
+        });
+    }
+
+    private void sendNoResultPluginResult(CallbackContext callbackContext) {
+        // send no result and keep callback
+//        PluginResult result = new PluginResult(PluginResult.Status.NO_RESULT);
+//        result.setKeepCallback(true);
+//        callbackContext.sendPluginResult(result);
+        callbackContext.success("success");
+    }
+
+    private JSONObject buildTIMMessageJSONObject(TIMMessage msg) throws JSONException {
+        JSONObject json = new JSONObject();
+        JSONArray elements = new JSONArray();
+        long count = msg.getElementCount();
+        for (int i = 0; (long) i < count; ++i) {
+            JSONObject element = new JSONObject();
+            TIMElem elem = msg.getElement(i);
+            if (elem != null) {
+                element.put("Type", elem.getType());
+                if (elem.getType() == TIMElemType.Text) {
+                    TIMTextElem textElem = (TIMTextElem) elem;
+                    element.put("Content", textElem.getText());
+                } else if (elem.getType() == TIMElemType.Custom) {
+                    TIMCustomElem customElem = (TIMCustomElem) elem;
+                    element.put("desc", customElem.getDesc());
+                    element.put("data", customElem.getData());
+                    element.put("ext", customElem.getExt());
+                }
+                elements.put(element);
+            }
+        }
+
+        json.put("ConverstaionType", msg.getConversation().getType());
+        json.put("ConversationId", msg.getConversation().getPeer());
+        json.put("MsgId", msg.getMsgId());
+        json.put("MsgSeq", msg.getSeq());
+        json.put("Rand", msg.getRand());
+        json.put("time", msg.timestamp());
+        json.put("isSelf", msg.isSelf());
+        json.put("Status", msg.status());
+        json.put("Sender", msg.getSender());
+        json.put("elements", elements);
+        return json;
+    }
+
+    /**
+     * TIMConversation转换为SessionInfo
+     *
+     * @param session
+     * @return
+     */
+    private SessionInfo TIMConversation2SessionInfo(TIMConversation session) {
+        TIMConversationExt ext = new TIMConversationExt(session);
+        TIMMessage message = ext.getLastMsg();
+        if (message == null)
+            return null;
+        SessionInfo info = new SessionInfo();
+        TIMConversationType type = session.getType();
+        if (type == TIMConversationType.System) {
+            if (message.getElementCount() > 0) {
+                TIMElem ele = message.getElement(0);
+                TIMElemType eleType = ele.getType();
+                if (eleType == TIMElemType.GroupSystem) {
+                    TIMGroupSystemElem groupSysEle = (TIMGroupSystemElem) ele;
+                    // 群系统消息处理，不需要显示信息的
+                    // groupSystMsgHandle(groupSysEle);
+                }
+            }
+            return null;
+        }
+
+        boolean isGroup = type == TIMConversationType.Group;
+        info.setLastMessageTime(message.timestamp() * 1000);
+        MessageInfo msg = MessageInfoUtil.TIMMessage2MessageInfo(message, isGroup);
+        info.setLastMessage(msg);
+        if (isGroup)
+            info.setTitle(session.getGroupName());
+        else
+            info.setTitle(session.getPeer());
+        info.setPeer(session.getPeer());
+        info.setGroup(session.getType() == TIMConversationType.Group);
+        if (ext.getUnreadMessageNum() > 0)
+            info.setUnRead((int) ext.getUnreadMessageNum());
+        return info;
+    }
+
+
+    public static Context getAppContext() {
+        return mContext;
+    }
 }
