@@ -1,8 +1,9 @@
 package cordova.plugin.bakaan.tim;
 
 import android.app.Activity;
+import android.app.Application;
 import android.content.Context;
-import android.content.SharedPreferences;
+import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
 
@@ -36,9 +37,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
+
 
 /**
  * This class echoes a string called from JavaScript.
@@ -60,24 +60,65 @@ public class Tim extends CordovaPlugin {
     public static final String ERROR_INVALID_PARAMETERS = "参数格式错误";
 
     protected static int sdkAppId;
+    protected static int backgroundcount = 1;
 
     private static Context mContext;
     private static Tim instance;
     private static Activity cordovaActivity;
-
-    private Set<String> mTopList;
-    private SharedPreferences mSessionPreferences;
 
     private int mUnreadTotal;
 
     public Tim() {
         instance = this;
     }
+
     @Override
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
         super.initialize(cordova, webView);
         mContext = cordova.getActivity().getApplicationContext();
         cordovaActivity = cordova.getActivity();
+        cordovaActivity.getApplication().registerActivityLifecycleCallbacks(new Application.ActivityLifecycleCallbacks() {
+            @Override
+            public void onActivityCreated(Activity activity, Bundle savedInstanceState) {
+
+            }
+
+            @Override
+            public void onActivitySaveInstanceState(Activity activity, Bundle outState) {
+
+            }
+
+            @Override
+            public void onActivityDestroyed(Activity activity) {
+
+            }
+
+            @Override
+            public void onActivityStarted(Activity activity) {
+                backgroundcount = 1;
+                if(backgroundcount == 1){
+                    Log.e("ZXK","foreground");
+                }
+            }
+
+            @Override
+            public void onActivityResumed(Activity activity) {
+
+            }
+
+            @Override
+            public void onActivityPaused(Activity activity) {
+
+            }
+
+            @Override
+            public void onActivityStopped(Activity activity) {
+                backgroundcount = 0;
+                if(backgroundcount == 0){
+                    Log.e("ZXK","background");
+                }
+            }
+        });
     }
 
     @Override
@@ -332,9 +373,13 @@ public class Tim extends CordovaPlugin {
 
             @Override
             public void handleNotification(TIMOfflinePushNotification notification) {
-                Log.d(TAG, "recv offline push");
-                // 这里的 doNotify 是 ImSDK 内置的通知栏提醒，应用也可以选择自己利用回调参数 notification 来构造自己的通知栏提醒
-                notification.doNotify(mContext.getApplicationContext(), 0);
+                Log.d(TAG, "recv offline push backgroundcount:" + backgroundcount);
+                if (backgroundcount != 1) {
+                    notification.setTitle("您有新的消息");
+                    notification.setContent("请注意查收");
+                    // 这里的 doNotify 是 ImSDK 内置的通知栏提醒，应用也可以选择自己利用回调参数 notification 来构造自己的通知栏提醒
+                    notification.doNotify(mContext.getApplicationContext(), mContext.getApplicationInfo().icon);
+                }
             }
         });
     }
@@ -361,6 +406,7 @@ public class Tim extends CordovaPlugin {
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
+
                 String format = "Tim.MessageListenerCallback(%s);";
                 final String js = String.format(format, json);
                 cordovaActivity.runOnUiThread(new Runnable() {
@@ -455,7 +501,6 @@ public class Tim extends CordovaPlugin {
         json.put("unRead", ext.getUnreadMessageNum());
         return json;
     }
-
 
     public static Context getAppContext() {
         return mContext;
