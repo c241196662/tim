@@ -40,9 +40,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import cn.jpush.android.api.JPushInterface;
-import io.cordova.hellocordova.R;
-
 /**
  * This class echoes a string called from JavaScript.
  */
@@ -65,6 +62,7 @@ public class Tim extends CordovaPlugin {
     protected static int sdkAppId;
 
     private static Context mContext;
+    private static Tim instance;
     private static Activity cordovaActivity;
 
     private Set<String> mTopList;
@@ -72,13 +70,13 @@ public class Tim extends CordovaPlugin {
 
     private int mUnreadTotal;
 
+    public Tim() {
+        instance = this;
+    }
     @Override
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
         super.initialize(cordova, webView);
         mContext = cordova.getActivity().getApplicationContext();
-
-        JPushInterface.init(mContext);
-
         cordovaActivity = cordova.getActivity();
     }
 
@@ -336,7 +334,7 @@ public class Tim extends CordovaPlugin {
             public void handleNotification(TIMOfflinePushNotification notification) {
                 Log.d(TAG, "recv offline push");
                 // 这里的 doNotify 是 ImSDK 内置的通知栏提醒，应用也可以选择自己利用回调参数 notification 来构造自己的通知栏提醒
-                notification.doNotify(mContext.getApplicationContext(), R.mipmap.icon);
+                notification.doNotify(mContext.getApplicationContext(), 0);
             }
         });
     }
@@ -363,7 +361,14 @@ public class Tim extends CordovaPlugin {
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
-                callbackContext.success(json);
+                String format = "Tim.MessageListenerCallback(%s);";
+                final String js = String.format(format, json);
+                cordovaActivity.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        instance.webView.loadUrl("javascript:" + js);
+                    }
+                });
                 return true; //返回true将终止回调链，不再调用下一个新消息监听器
             }
         });

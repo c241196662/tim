@@ -86,6 +86,7 @@ module.exports = {
      * </code>
      */
     addmessagelistener: function (message, onSuccess, onError) {
+        document.addEventListener("tim.messagelistener", onSuccess, false);
         exec(onSuccess, onError, "Tim", "addmessagelistener", [message]);
     },
     /**
@@ -104,7 +105,7 @@ module.exports = {
         exec(onSuccess, onError, "Tim", "addpushlistener", [message]);
     },
     /**
-    * 接收消息
+    * 读取会话
     *
     * @example
     * <code>
@@ -121,7 +122,7 @@ module.exports = {
         exec(onSuccess, onError, "Tim", "loadsession", [message]);
     },
     /**
-    * 接收所有消息
+    * 读取会话列表
     *
     * @example
     * <code>
@@ -134,5 +135,16 @@ module.exports = {
     */
     loadsessionlist: function (message, onSuccess, onError) {
         exec(onSuccess, onError, "Tim", "loadsessionlist", [message]);
+    },
+    /**
+     * 接收消息的监听
+     * @param {*} data 
+     */
+    MessageListenerCallback: function (data) {
+        if (device.platform === "Android") {
+            data = JSON.stringify(data);
+            var event = JSON.parse(data);
+            cordova.fireDocumentEvent("tim.messagelistener", event);
+        }
     }
 };
