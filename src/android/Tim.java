@@ -17,12 +17,14 @@ import com.tencent.imsdk.TIMConversationType;
 import com.tencent.imsdk.TIMCustomElem;
 import com.tencent.imsdk.TIMElem;
 import com.tencent.imsdk.TIMElemType;
-import com.tencent.imsdk.TIMGroupSystemElem;
-import com.tencent.imsdk.TIMGroupSystemElemType;
 import com.tencent.imsdk.TIMLogLevel;
 import com.tencent.imsdk.TIMManager;
 import com.tencent.imsdk.TIMMessage;
 import com.tencent.imsdk.TIMMessageListener;
+import com.tencent.imsdk.TIMMessageOfflinePushSettings;
+import com.tencent.imsdk.TIMOfflinePushListener;
+import com.tencent.imsdk.TIMOfflinePushNotification;
+import com.tencent.imsdk.TIMOfflinePushSettings;
 import com.tencent.imsdk.TIMSdkConfig;
 import com.tencent.imsdk.TIMTextElem;
 import com.tencent.imsdk.TIMValueCallBack;
@@ -30,7 +32,6 @@ import com.tencent.imsdk.ext.message.TIMConversationExt;
 import com.tencent.imsdk.ext.message.TIMManagerExt;
 
 import org.apache.cordova.CordovaWebView;
-import org.apache.cordova.PluginResult;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -40,6 +41,7 @@ import java.util.List;
 import java.util.Set;
 
 import cn.jpush.android.api.JPushInterface;
+import io.cordova.hellocordova.R;
 
 /**
  * This class echoes a string called from JavaScript.
@@ -54,6 +56,7 @@ public class Tim extends CordovaPlugin {
     public static final String ACTION_LOGOUT = "logout"; // 登出
     public static final String ACTION_SEND = "send"; // 发送
     public static final String ACTION_ADDMESSAGELISTENER = "addmessagelistener"; // 增加消息接收监听
+    public static final String ACTION_ADDPUSHLISTENER = "addpushlistener"; // 增加消息推送监听
     public static final String ACTION_LOADSESSION = "loadsession"; // 获取历史消息
     public static final String ACTION_LOADSESSIONLIST = "loadsessionlist"; // 获取所有人的历史消息
 
@@ -96,6 +99,9 @@ public class Tim extends CordovaPlugin {
                 return true;
             case ACTION_ADDMESSAGELISTENER:
                 this.addMessageListener(callbackContext);
+                return true;
+            case ACTION_ADDPUSHLISTENER:
+                this.addPushListener(callbackContext);
                 return true;
             case ACTION_LOADSESSION:
                 this.loadsession(args, callbackContext);
@@ -255,7 +261,7 @@ public class Tim extends CordovaPlugin {
             TIMConversationExt conExt = new TIMConversationExt(con);
 
             //获取此会话的消息
-            conExt.getLocalMessage(999, //获取此会话最近的 10 条消息
+            conExt.getMessage(999, //获取此会话最近的 10 条消息
                     null, //不指定从哪条消息开始获取 - 等同于从最新的消息开始往前
                     new TIMValueCallBack<List<TIMMessage>>() {//回调接口
                         @Override
@@ -271,7 +277,9 @@ public class Tim extends CordovaPlugin {
                             //遍历取得的消息
                             JSONArray json = new JSONArray();
                             try {
-                                for (TIMMessage msg : msgs) {
+                                // 要反向取 很神秘
+                                for (int i = msgs.size() - 1; i >= 0; i--) {
+                                    TIMMessage msg = msgs.get(i);
                                     //可以通过 timestamp()获得消息的时间戳, isSelf()是否为自己发送的消息
                                     Log.e(TAG, "get msg: " + msg.timestamp() + " self: " + msg.isSelf() + " seq: " + msg.getSeq());
                                     json.put(TIMMessage2JSONObject(msg));
@@ -309,28 +317,28 @@ public class Tim extends CordovaPlugin {
         }
     }
 
-    /**
-     * 获取回话, 读取/发送消息用
-     *
-     * @param args
-     * @return
-     */
-    private TIMConversation getconversation(CordovaArgs args) throws JSONException {
+    private void addPushListener(final CallbackContext callbackContext) {
+        TIMOfflinePushSettings settings = new TIMOfflinePushSettings();
+        settings.setEnabled(true);
+        //设置在 Android 设备上收到消息时的离线配置
+        TIMMessageOfflinePushSettings.AndroidSettings androidSettings = new TIMMessageOfflinePushSettings.AndroidSettings();
 
-        final JSONObject params;
-        try {
-            params = args.getJSONObject(0);
-            int conversationType = params.has("conversationType") ? params.getInt("conversationType") : 1;
+        //推送自定义通知栏消息，接收方收到消息后单击通知栏消息会给应用回调（针对小米、华为离线推送）
+        androidSettings.setNotifyMode(TIMMessageOfflinePushSettings.NotifyMode.Normal);
+        TIMMessageOfflinePushSettings.IOSSettings iosSettings = new TIMMessageOfflinePushSettings.IOSSettings();
+        //开启 Badge 计数
+        iosSettings.setBadgeEnabled(true);
+        TIMManager.getInstance().setOfflinePushSettings(settings);
+        // 设置离线消息通知
+        TIMManager.getInstance().setOfflinePushListener(new TIMOfflinePushListener() {
 
-            //获取会话
-            String selto = params.getString("selto");//获取与用户/群组 的会话
-            TIMConversation conversation = TIMManager.getInstance().getConversation(
-                    conversationType == 1 ? TIMConversationType.C2C : TIMConversationType.Group,    //会话类型：单聊/群组
-                    selto);                      //会话对方用户帐号//对方ID/群组 ID
-            return conversation;
-        } catch (JSONException e) {
-            return null;
-        }
+            @Override
+            public void handleNotification(TIMOfflinePushNotification notification) {
+                Log.d(TAG, "recv offline push");
+                // 这里的 doNotify 是 ImSDK 内置的通知栏提醒，应用也可以选择自己利用回调参数 notification 来构造自己的通知栏提醒
+                notification.doNotify(mContext.getApplicationContext(), R.mipmap.icon);
+            }
+        });
     }
 
     private void addMessageListener(final CallbackContext callbackContext) {
@@ -367,6 +375,30 @@ public class Tim extends CordovaPlugin {
 //        result.setKeepCallback(true);
 //        callbackContext.sendPluginResult(result);
         callbackContext.success("success");
+    }
+
+    /**
+     * 获取回话, 读取/发送消息用
+     *
+     * @param args
+     * @return
+     */
+    private TIMConversation getconversation(CordovaArgs args) throws JSONException {
+
+        final JSONObject params;
+        try {
+            params = args.getJSONObject(0);
+            int conversationType = params.has("conversationType") ? params.getInt("conversationType") : 1;
+
+            //获取会话
+            String selto = params.getString("selto");//获取与用户/群组 的会话
+            TIMConversation conversation = TIMManager.getInstance().getConversation(
+                    conversationType == 1 ? TIMConversationType.C2C : TIMConversationType.Group,    //会话类型：单聊/群组
+                    selto);                      //会话对方用户帐号//对方ID/群组 ID
+            return conversation;
+        } catch (JSONException e) {
+            return null;
+        }
     }
 
     private JSONObject TIMMessage2JSONObject(TIMMessage msg) throws JSONException {

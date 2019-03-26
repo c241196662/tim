@@ -89,6 +89,21 @@ module.exports = {
         exec(onSuccess, onError, "Tim", "addmessagelistener", [message]);
     },
     /**
+     * 推送消息
+     *
+     * @example
+     * <code>
+     * Tim.addpushlistener({}, function (msgs) {
+     *     alert("msgs: " + msgs);
+     * }, function (reason) {
+     *     alert("Failed: " + reason);
+     * });
+     * </code>
+     */
+    addpushlistener: function (message, onSuccess, onError) {
+        exec(onSuccess, onError, "Tim", "addpushlistener", [message]);
+    },
+    /**
     * 接收消息
     *
     * @example
