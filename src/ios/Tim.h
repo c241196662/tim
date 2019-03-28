@@ -1,15 +1,24 @@
-//
-//  CDVWechat.h
-//  cordova-plugin-adam-wechat
-//
-//  Created by xu.li on 12/23/13.
-//
-//
 
 #import <Cordova/CDV.h>
+#import <ImSDK/ImSDK.h>
 
-@interface CDVWechat:CDVPlugin <WXApiDelegate>
+@interface Tim : CDVPlugin
+@property (nonatomic, strong) NSString *currentCallbackId;
 
-- (void)coolMethod:(CDVInvokedUrlCommand*)command;
+- (void)init:(CDVInvokedUrlCommand *)command;
+
+- (void)login:(CDVInvokedUrlCommand *)command;
+
+- (void)logout:(CDVInvokedUrlCommand *)command;
+
+- (void)send:(CDVInvokedUrlCommand *)command;
+
+- (void)loadsession:(CDVInvokedUrlCommand *)command;
+
+- (void)loadsessionlist:(CDVInvokedUrlCommand *)command;
+
+- (void)addPushListener;
+
+- (void)addMessageListener;
 
 @end
