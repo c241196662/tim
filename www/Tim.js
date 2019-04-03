@@ -9,6 +9,7 @@ module.exports = {
      * <code>
      * Tim.init({
      *     sdkAppId: 0, //从云通信控制台创建应用获取到的sdkappid
+     *     busiId: 0, // 从云通信后台上传证书获取到的busiId
      *     accountType: 0, //用户类型,自建还是依托于腾讯
      *     enableLogPrint: true // 是否开启打印日志,默认为false
      * }, function () {
