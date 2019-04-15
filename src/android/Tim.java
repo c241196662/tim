@@ -3,8 +3,12 @@ package cordova.plugin.bakaan.tim;
 import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
+import android.media.Ringtone;
+import android.media.RingtoneManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Vibrator;
 import android.util.Log;
 
 import org.apache.cordova.CordovaArgs;
@@ -18,6 +22,8 @@ import com.tencent.imsdk.TIMConversationType;
 import com.tencent.imsdk.TIMCustomElem;
 import com.tencent.imsdk.TIMElem;
 import com.tencent.imsdk.TIMElemType;
+import com.tencent.imsdk.TIMImage;
+import com.tencent.imsdk.TIMImageElem;
 import com.tencent.imsdk.TIMLogLevel;
 import com.tencent.imsdk.TIMManager;
 import com.tencent.imsdk.TIMMessage;
@@ -38,6 +44,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.List;
+
+import static android.content.Context.VIBRATOR_SERVICE;
 
 
 /**
@@ -96,8 +104,8 @@ public class Tim extends CordovaPlugin {
             @Override
             public void onActivityStarted(Activity activity) {
                 backgroundcount = 1;
-                if(backgroundcount == 1){
-                    Log.e("ZXK","foreground");
+                if (backgroundcount == 1) {
+                    Log.e("ZXK", "foreground");
                 }
             }
 
@@ -114,8 +122,8 @@ public class Tim extends CordovaPlugin {
             @Override
             public void onActivityStopped(Activity activity) {
                 backgroundcount = 0;
-                if(backgroundcount == 0){
-                    Log.e("ZXK","background");
+                if (backgroundcount == 0) {
+                    Log.e("ZXK", "background");
                 }
             }
         });
@@ -247,15 +255,27 @@ public class Tim extends CordovaPlugin {
         final JSONObject params;
         try {
             params = args.getJSONObject(0);
-            String msgcontent = params.getString("msg");
+            String msgtype = params.getString("msgtype");
             //构造一条消息并添加一个文本内容
             TIMMessage msg = new TIMMessage();
-            TIMTextElem elem = new TIMTextElem();
-            elem.setText(msgcontent);
-            msg.addElement(elem);
+            if ("text".equals(msgtype)) {
+                TIMTextElem elem = new TIMTextElem();
+                String msgcontent = params.getString("msg");
+                elem.setText(msgcontent);
+                msg.addElement(elem);
+            } else if ("img".equals(msgtype)) {
+                //添加图片
+                TIMImageElem elem = new TIMImageElem();
+                String imgurl = params.getString("imgurl");
+                imgurl = imgurl.replace("file://", "");
+                imgurl = imgurl.split("\\?")[0];
+                elem.setPath(imgurl);
+                msg.addElement(elem);
+                Log.i(TAG, "imgurl: " + Environment.getExternalStorageDirectory());
+                Log.i(TAG, "imgurl: " + imgurl);
+            }
 
             String selto = params.getString("selto");//获取与用户/群组 的会话
-            Log.i(TAG, "coversation start: selto = " + selto + ",   msg = " + msgcontent);
             TIMConversation conversation = getconversation(args);
             Log.i(TAG, "send message start");
             //发送消息
@@ -336,7 +356,6 @@ public class Tim extends CordovaPlugin {
     }
 
     private void loadsessionlist(CordovaArgs args, CallbackContext callbackContext) {
-        final JSONObject params;
         List<TIMConversation> TIMSessions = TIMManagerExt.getInstance().getConversationList();
         JSONArray infos = new JSONArray();
         try {
@@ -374,9 +393,18 @@ public class Tim extends CordovaPlugin {
             @Override
             public void handleNotification(TIMOfflinePushNotification notification) {
                 Log.d(TAG, "recv offline push backgroundcount:" + backgroundcount);
+                // 判断APP是否处于激活(前台)状态
                 if (backgroundcount != 1) {
+                    Uri notificationuri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+//                    Ringtone r = RingtoneManager.getRingtone(getApplicationContext(), notification);
+//                    r.play();
+
                     notification.setTitle("您有新的消息");
                     notification.setContent("请注意查收");
+                    notification.setSound(notificationuri);
+                    // 震动
+                    Vibrator vibrator = (Vibrator) mContext.getSystemService(VIBRATOR_SERVICE);
+                    vibrator.vibrate(1000);
                     // 这里的 doNotify 是 ImSDK 内置的通知栏提醒，应用也可以选择自己利用回调参数 notification 来构造自己的通知栏提醒
                     notification.doNotify(mContext.getApplicationContext(), mContext.getApplicationInfo().icon);
                 }
@@ -415,6 +443,22 @@ public class Tim extends CordovaPlugin {
                         instance.webView.loadUrl("javascript:" + js);
                     }
                 });
+                TIMOfflinePushNotification notification = new TIMOfflinePushNotification();
+                // 判断APP是否处于激活(前台)状态
+                if (backgroundcount != 1) {
+                    Uri notificationuri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+//                    Ringtone r = RingtoneManager.getRingtone(getApplicationContext(), notification);
+//                    r.play();
+
+                    notification.setTitle("您有新的消息");
+                    notification.setContent("请注意查收");
+                    notification.setSound(notificationuri);
+                    // 震动
+                    Vibrator vibrator = (Vibrator) mContext.getSystemService(VIBRATOR_SERVICE);
+                    vibrator.vibrate(1000);
+                    // 这里的 doNotify 是 ImSDK 内置的通知栏提醒，应用也可以选择自己利用回调参数 notification 来构造自己的通知栏提醒
+                    notification.doNotify(mContext.getApplicationContext(), mContext.getApplicationInfo().icon);
+                }
                 return true; //返回true将终止回调链，不再调用下一个新消息监听器
             }
         });
@@ -464,6 +508,19 @@ public class Tim extends CordovaPlugin {
                 if (elem.getType() == TIMElemType.Text) {
                     TIMTextElem textElem = (TIMTextElem) elem;
                     element.put("Content", textElem.getText());
+                } else if (elem.getType() == TIMElemType.Image) {
+                    //图片元素
+                    TIMImageElem e = (TIMImageElem) elem;
+                    for (TIMImage image : e.getImageList()) {
+
+                        //获取图片类型, 大小, 宽高
+                        Log.d(TAG, "image type: " + image.getType() +
+                                " image size " + image.getSize() +
+                                " image height " + image.getHeight() +
+                                " image width " + image.getWidth());
+                        Log.d(TAG, "image getUrl: " + image.getUrl());
+                        element.put("Content", "<img src=\"" + image.getUrl() + "\" bigImgUrl='" + image.getUrl() + "' onclick='imageClick(this)' />");
+                    }
                 } else if (elem.getType() == TIMElemType.Custom) {
                     TIMCustomElem customElem = (TIMCustomElem) elem;
                     element.put("desc", customElem.getDesc());
